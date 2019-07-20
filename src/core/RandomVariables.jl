@@ -1056,17 +1056,18 @@ function getparams(vi::TypedVarInfo, spl::Union{SampleFromPrior, Sampler})
 end
 # Recursively builds a tuple of the parameter values of all the symbols
 @generated function _getparams(vns::NamedTuple{names}, vi) where {names}
-    expr = Expr(:tuple)
+    exprs = Expr[]
     for f in names
-        push!(expr.args, :($f = findvns(vi, vns.$f)))
+        push!(exprs, :($f = findvals(vi, vns.$f)))
     end
-    return expr
+    length(exprs) == 0 && return :(NamedTuple())
+    return :($(exprs...),)
 end
-@inline function findvns(vi, f_vns)
+@inline function findvals(vi, f_vns)
     if length(f_vns) == 0
         throw("Unidentified error, please report this error in an issue.")
     end
-    return mapreduce(vn -> vi[vn], vcat, f_vns)
+    return map(vn -> vi[vn], f_vns)
 end
 
 function Base.eltype(vi::AbstractVarInfo, spl::Union{AbstractSampler, SampleFromPrior})
